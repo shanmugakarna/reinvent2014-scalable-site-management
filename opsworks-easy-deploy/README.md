@@ -25,6 +25,8 @@ The result is a 0 downtime deployment.
 
     easy_deploy.py update_cookbooks all --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
     
+    easy_deploy.py update_cookbooks execute_recipies --recipe=test:run --recipe=test:run2 all --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
+    
     easy_deploy.py deploy --application=myapp rolling --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
 
     easy_deploy.py deploy --application=myapp instances --stack-name=teststack --hosts=host1,host2 --comment="Deploy to host1 and host2"
@@ -62,6 +64,10 @@ The list below identifies which options are for which commands.
 ### update_cookbooks
 
 * Requires no argument/options, this command updates the cookbook cache on all the instances.
+
+### execute_recipes
+
+* `--recipe`: Recipe to Run. Can be specifed multiple times to run more than one recipe.
 
 ### deploy
 
