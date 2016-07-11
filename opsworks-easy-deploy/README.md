@@ -17,10 +17,14 @@ ELB `HealthCheck` configuration and wait for the `HealthyThreshold * Interval` s
 
 Once complete, it will move on to the next instance in the ELB and perform the same steps.
 
+This also supports the `update_cookbooks` command to update cookbooks before deployment
+
 The result is a 0 downtime deployment.
 
 ## Examples
 
+    easy_deploy.py update_cookbooks all --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
+    
     easy_deploy.py deploy --application=myapp rolling --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
 
     easy_deploy.py deploy --application=myapp instances --stack-name=teststack --hosts=host1,host2 --comment="Deploy to host1 and host2"
