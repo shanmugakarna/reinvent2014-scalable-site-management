@@ -331,6 +331,24 @@ class Deploy(Operation):
             'Comment': comment
         }
 
+class Update_Cookbook(Operation):
+    """
+    Used to issue a Update Cookbook operation within OpsWorks
+    """
+    def __init__(self, context):
+        super(Update_Cookbook, self).__init__(context)
+
+    @property
+    def command(self):
+        return 'update_custom_cookbooks'
+
+    def _create_deployment_arguments(self, instance_ids, comment):
+        return {
+            'StackId': self.stack_id,
+            'InstanceIds': instance_ids,
+            'Command': {'Name': self.command},
+            'Comment': comment
+        }
 
 def log(message):
     click.echo("[{0}] {1}".format(arrow.utcnow().format('YYYY-MM-DD HH:mm:ss ZZ'), message))
@@ -358,7 +376,13 @@ def update(ctx, allow_reboot, amazon_linux_release):
     operation.amazon_linux_release = amazon_linux_release
     ctx.obj['OPERATION'] = operation
 
-
+@cli.command(help='Updates Custom Cookbooks')
+@click.pass_context
+def update_cookbooks(ctx):
+    operation = Update_Cookbook(ctx)
+    ctx.obj['OPERATION'] = operation
+	
+	
 @cli.command(help='Deploys an application')
 @click.option('--application', type=click.STRING, required=True, help='OpsWorks Application')
 @click.pass_context
