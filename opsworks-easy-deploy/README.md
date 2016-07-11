@@ -17,10 +17,14 @@ ELB `HealthCheck` configuration and wait for the `HealthyThreshold * Interval` s
 
 Once complete, it will move on to the next instance in the ELB and perform the same steps.
 
+This also supports the `update_cookbooks` command to update cookbooks before deployment
+
 The result is a 0 downtime deployment.
 
 ## Examples
 
+    easy_deploy.py update_cookbooks all --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
+    
     easy_deploy.py deploy --application=myapp rolling --stack-name=teststack --layer-name=apiserver --comment="Rolling deployment to all apiservers" --timeout=300
 
     easy_deploy.py deploy --application=myapp instances --stack-name=teststack --hosts=host1,host2 --comment="Deploy to host1 and host2"
@@ -54,6 +58,10 @@ The list below identifies which options are for which commands.
 * `--profile`: AWS profile to use.  Can be omitted if running on an instance with IAM Profiles.  Or can be set via the ENV variable `BOTO_DEFAULT_PROFILE`.  Or use the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` ENV variables.
 * `--opsworks-region`: AWS region that OpsWorks is in (default: `us-east-1`) *Note: this is not the region your instances are in, but the region OpsWorks endpoints are in*
 * `--elb-region`: AWS region your Elastic Load Balancer is in (default: `us-east-1`)
+
+### update_cookbooks
+
+* Requires no argument/options, this command updates the cookbook cache on all the instances.
 
 ### deploy
 
