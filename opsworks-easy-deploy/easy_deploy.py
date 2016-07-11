@@ -350,6 +350,26 @@ class Update_Cookbook(Operation):
             'Comment': comment
         }
 
+class Execute_Recipes(Operation):
+    """
+    Used to issue a Execute Recipe operation within OpsWorks
+    """
+    def __init__(self, context):
+        self.recipies = None
+        super(Execute_Recipes, self).__init__(context)
+
+    @property
+    def command(self):
+        return 'execute_recipes'
+
+    def _create_deployment_arguments(self, instance_ids, comment):
+        return {
+            'StackId': self.stack_id,
+            'InstanceIds': instance_ids,
+            'Command': {'Name': self.command, 'Args': {'recipes': [','.join(self.recipes)]}},
+            'Comment': comment
+        }		
+		
 def log(message):
     click.echo("[{0}] {1}".format(arrow.utcnow().format('YYYY-MM-DD HH:mm:ss ZZ'), message))
 
@@ -381,8 +401,15 @@ def update(ctx, allow_reboot, amazon_linux_release):
 def update_cookbooks(ctx):
     operation = Update_Cookbook(ctx)
     ctx.obj['OPERATION'] = operation
-	
-	
+
+@cli.command(help='Run a Custom Recipe')
+@click.option('--recipe', type=click.STRING, required=True, multiple=True, help='Custom Recipes to Run')
+@click.pass_context
+def execute_recipes(ctx, recipe):
+    operation = Execute_Recipes(ctx)
+    operation.recipes = recipe
+    ctx.obj['OPERATION'] = operation
+
 @cli.command(help='Deploys an application')
 @click.option('--application', type=click.STRING, required=True, help='OpsWorks Application')
 @click.pass_context
@@ -434,3 +461,4 @@ def instances(ctx, stack_name, hosts, comment, timeout):
 
 if __name__ == '__main__':
     cli(obj={})
+
