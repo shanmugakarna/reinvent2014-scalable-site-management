@@ -59,6 +59,10 @@ The list below identifies which options are for which commands.
 * `--opsworks-region`: AWS region that OpsWorks is in (default: `us-east-1`) *Note: this is not the region your instances are in, but the region OpsWorks endpoints are in*
 * `--elb-region`: AWS region your Elastic Load Balancer is in (default: `us-east-1`)
 
+### update_cookbooks
+
+* Requires no argument/options, this command updates the cookbook cache on all the instances.
+
 ### deploy
 
 * `--application`: Application shortname within OpsWorks
