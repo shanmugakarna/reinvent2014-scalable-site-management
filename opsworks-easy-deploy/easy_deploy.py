@@ -95,15 +95,45 @@ class Operation(object):
             self.post_deployment_hooks.append(self._add_instance_to_elb)
 
         all_instances = self._make_api_call('opsworks', 'describe_instances', LayerId=self.layer_id)
-        for each in all_instances['Instances']:
+
+        if len(all_instances['Instances']) < 2:
+            print "Only one instance behind the ELB / Layer.. Aborting deploy"
+            sys.exit(1)
+            
+        first_half_instances =  all_instances['Instances'][:len(all_instances['Instances'])/2]
+        second_half_instances = all_instances['Instances'][len(all_instances['Instances'])/2:]
+
+        hostname = []
+        instance_id = []
+        ec2_instance_id = []
+
+        print "Deploying to the first half of the instances in layer: " + self.layer_id
+        print '========================================================================================='
+        for each in first_half_instances:
             if each['Status'] != 'online':
                 continue
+            hostname.append(each['Hostname'])
+            instance_id.append(each['InstanceId'])
+            ec2_instance_id.append({'InstanceId': each['Ec2InstanceId']})
 
-            hostname = each['Hostname']
-            instance_id = each['InstanceId']
-            ec2_instance_id = each['Ec2InstanceId']
+        hostnames = ','.join(hostname)
+        self._deploy_to(InstanceIds=instance_id, Name=hostnames, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_id)
 
-            self._deploy_to(InstanceIds=[instance_id], Name=hostname, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_id)
+        print "Deploying to the second half of the instances in layer: " + self.layer_id
+        print '========================================================================================'
+        hostname = []
+        instance_id = []
+        ec2_instance_id = []
+
+        for each in second_half_instances:
+            if each['Status'] != 'online':
+                continue
+            hostname.append(each['Hostname'])
+            instance_id.append(each['InstanceId'])
+            ec2_instance_id.append({'InstanceId': each['Ec2InstanceId']})
+
+        hostnames = ','.join(hostname)
+        self._deploy_to(InstanceIds=instance_id, Name=hostnames, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_id)
 
     def instances_at_once(self, host_names, comment):
         all_instances = self._make_api_call('opsworks', 'describe_instances', StackId=self.stack_id)
@@ -193,18 +223,18 @@ class Operation(object):
     def _add_instance_to_elb(self, **kwargs):
         self._make_api_call('elb', 'register_instances_with_load_balancer',
                             LoadBalancerName=kwargs['LoadBalancerName'],
-                            Instances=[{'InstanceId': kwargs['Ec2InstanceId']}])
+                            Instances=kwargs['Ec2InstanceId'])
 
         self.post_elb_registration(kwargs['Name'], kwargs['LoadBalancerName'])
-
-        if not self._is_instance_healthy(kwargs['LoadBalancerName'], kwargs['Ec2InstanceId']):
-            log("Instance {0} did not come online after deploy. Aborting remaining deployment".format(kwargs['Name']))
-            sys.exit(1)
+        for instance in kwargs['Ec2InstanceId']:
+            if not self._is_instance_healthy(kwargs['LoadBalancerName'], instance['InstanceId']):
+                log("Instance {0} did not come online after deploy. Aborting remaining deployment".format(kwargs['Name']))
+                sys.exit(1)
 
     def _remove_instance_from_elb(self, **kwargs):
         deregister_response = self._make_api_call('elb', 'deregister_instances_from_load_balancer',
                                                   LoadBalancerName=kwargs['LoadBalancerName'],
-                                                  Instances=[{'InstanceId': kwargs['Ec2InstanceId']}])
+                                                  Instances=kwargs['Ec2InstanceId'])
         log("Removed {0} from ELB {1}. There are still {2} instance(s) online".format(kwargs['Name'], kwargs['LoadBalancerName'], len(deregister_response['Instances'])))
 
         self._wait_for_elb(kwargs['LoadBalancerName'])
@@ -368,8 +398,8 @@ class Execute_Recipes(Operation):
             'InstanceIds': instance_ids,
             'Command': {'Name': self.command, 'Args': {'recipes': [','.join(self.recipes)]}},
             'Comment': comment
-        }		
-		
+        }
+
 def log(message):
     click.echo("[{0}] {1}".format(arrow.utcnow().format('YYYY-MM-DD HH:mm:ss ZZ'), message))
 
@@ -461,4 +491,3 @@ def instances(ctx, stack_name, hosts, comment, timeout):
 
 if __name__ == '__main__':
     cli(obj={})
-
