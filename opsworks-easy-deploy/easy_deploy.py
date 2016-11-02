@@ -99,41 +99,33 @@ class Operation(object):
         if len(all_instances['Instances']) < 2:
             print "Only one instance behind the ELB / Layer.. Aborting deploy"
             sys.exit(1)
-            
-        first_half_instances =  all_instances['Instances'][:len(all_instances['Instances'])/2]
-        second_half_instances = all_instances['Instances'][len(all_instances['Instances'])/2:]
 
         hostname = []
         instance_id = []
         ec2_instance_id = []
+
+        for each in all_instances['Instances']:
+            if each['Status'] != 'online':
+                continue
+            hostname.append(each['Hostname'])
+            instance_id.append(each['InstanceId'])
+            ec2_instance_id.append({'InstanceId': each['Ec2InstanceId']})
+
+        hostnames_1 = ','.join(hostname[:len(hostname)/2])
+        instance_ids_1 = instance_id[:len(instance_id)/2]
+        ec2_instance_ids_1 = ec2_instance_id[:len(ec2_instance_id)/2]
+
+        hostnames_2 = ','.join(hostname[len(hostname)/2:])
+        instance_ids_2 = instance_id[len(instance_id)/2:]
+        ec2_instance_ids_2 = ec2_instance_id[len(ec2_instance_id)/2:]
 
         print "Deploying to the first half of the instances in layer: " + self.layer_id
-        print '========================================================================================='
-        for each in first_half_instances:
-            if each['Status'] != 'online':
-                continue
-            hostname.append(each['Hostname'])
-            instance_id.append(each['InstanceId'])
-            ec2_instance_id.append({'InstanceId': each['Ec2InstanceId']})
-
-        hostnames = ','.join(hostname)
-        self._deploy_to(InstanceIds=instance_id, Name=hostnames, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_id)
+        print '==============================================================================='
+        self._deploy_to(InstanceIds=instance_ids_1, Name=hostnames_1, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_ids_1)
 
         print "Deploying to the second half of the instances in layer: " + self.layer_id
-        print '========================================================================================'
-        hostname = []
-        instance_id = []
-        ec2_instance_id = []
-
-        for each in second_half_instances:
-            if each['Status'] != 'online':
-                continue
-            hostname.append(each['Hostname'])
-            instance_id.append(each['InstanceId'])
-            ec2_instance_id.append({'InstanceId': each['Ec2InstanceId']})
-
-        hostnames = ','.join(hostname)
-        self._deploy_to(InstanceIds=instance_id, Name=hostnames, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_id)
+        print '==============================================================================='
+        self._deploy_to(InstanceIds=instance_ids_2, Name=hostnames_2, Comment=comment, LoadBalancerName=load_balancer_name, Ec2InstanceId=ec2_instance_ids_2)
 
     def instances_at_once(self, host_names, comment):
         all_instances = self._make_api_call('opsworks', 'describe_instances', StackId=self.stack_id)
